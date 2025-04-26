@@ -858,13 +858,71 @@ class DecoratorManager {
      * @param {string} className - the class name to map
      * @returns {string} - the type key
      */
-    mapClassToTypeKey(className) {
+    static mapClassToTypeKey(className) {
         const mapping = {
             'concerto.metamodel@1.0.0.DecoratorString': 'string',
             'concerto.metamodel@1.0.0.DecoratorNumber': 'number',
             'concerto.metamodel@1.0.0.DecoratorBoolean': 'boolean'
         };
         return mapping[className] || 'unknown';
+    }
+
+    /**
+     * convert yaml to json
+     * @param {string} yamlStr - the YAML string to convert
+     * @returns {object} - the JSON object
+     * @throws {Error} - if the YAML string is invalid
+     */
+    static yamlToJson(yamlStr) {
+        const yamlObj = YAML.parse(yamlStr);
+
+        if (!yamlObj.name || !yamlObj.version || !yamlObj.commands) {
+            throw new Error('Required fields are missing in YAML');
+        }
+
+        const jsonObj = {
+            '$class': 'org.accordproject.decoratorcommands@0.4.0.DecoratorCommandSet',
+            name: yamlObj.name,
+            version: yamlObj.version,
+            commands: yamlObj.commands.map(cmd => {
+                const target = {
+                    '$class': 'org.accordproject.decoratorcommands@0.4.0.CommandTarget',
+                    ...cmd.target
+                };
+
+                const decorator = {
+                    '$class': 'concerto.metamodel@1.0.0.Decorator',
+                    name: cmd.decorator.name,
+                    arguments: cmd.decorator.arguments.map(arg => {
+                        const [typeKey, value] = Object.entries(arg)[0];
+                        const className = this.mapTypeKeyToClass(typeKey);
+                        return { "$class": className, value };
+                    })
+                };
+
+                return {
+                    '$class': 'org.accordproject.decoratorcommands@0.4.0.Command',
+                    type: cmd.type,
+                    target,
+                    decorator
+                };
+            })
+        };
+
+        return jsonObj;
+    }
+    /**
+     * Maps the type key to the class name
+     * @param {string} typeKey - the type key to map
+     * @returns {string} - the class name
+     */
+    mapTypeKeyToClass(typeKey) {
+        const mapping = {
+            'string': 'concerto.metamodel@1.0.0.DecoratorString',
+            'number': 'concerto.metamodel@1.0.0.DecoratorNumber',
+            'boolean': 'concerto.metamodel@1.0.0.DecoratorBoolean'
+        };
+        return mapping[typeKey] || 'unknown';
     }
 }
 
