@@ -22,6 +22,7 @@ const { MetaModelNamespace } = require('@accordproject/concerto-metamodel');
 const semver = require('semver');
 const DecoratorExtractor = require('./decoratorextractor');
 const { Warning, ErrorCodes } = require('@accordproject/concerto-util');
+const YAML = require('yaml');
 
 // Types needed for TypeScript generation.
 /* eslint-disable no-unused-vars */
@@ -812,6 +813,58 @@ class DecoratorManager {
             );
             return false;
         }
+    }
+
+    /**
+     * convert json to yaml
+     * @param {object} json - the JSON object to convert
+     * @returns {string} - the YAML string
+     * @throws {Error} - if the JSON object is invalid
+     */
+    static jsonToYaml(json) {
+        if (!json.name || !json.version || !json.commands) {
+            throw new Error('Required fields are missing in JSON');
+        }
+
+        const yamlObj = {
+            name: json.name,
+            version: json.version,
+            commands: json.commands.map(cmd => {
+                const target = {};
+                if (cmd.target.property){
+                    target.property = cmd.target.property;
+                }
+                const decorator = {
+                    name: cmd.decorator.name,
+                    namespace: 'concerto.metamodel@1.0.0',
+                    arguments: cmd.decorator.arguments.map(arg => {
+                        const typeKey = this.mapClassToTypeKey(arg.$class);
+                        return { [typeKey]: arg.value };
+                    })
+                };
+
+                return {
+                    type: cmd.type,
+                    target,
+                    decorator
+                };
+            })
+        };
+
+        return YAML.stringify(yamlObj);
+    }
+    /**
+     * Maps the class name to the type key
+     * @param {string} className - the class name to map
+     * @returns {string} - the type key
+     */
+    mapClassToTypeKey(className) {
+        const mapping = {
+            'concerto.metamodel@1.0.0.DecoratorString': 'string',
+            'concerto.metamodel@1.0.0.DecoratorNumber': 'number',
+            'concerto.metamodel@1.0.0.DecoratorBoolean': 'boolean'
+        };
+        return mapping[className] || 'unknown';
     }
 }
 

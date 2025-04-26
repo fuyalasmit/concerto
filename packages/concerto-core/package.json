@@ -73,7 +73,8 @@
     "randexp": "0.5.3",
     "semver": "7.6.3",
     "urijs": "1.19.11",
-    "uuid": "11.0.3"
+    "uuid": "11.0.3",
+    "yaml": "^2.7.1"
   },
   "browserslist": "> 0.25%, not dead",
   "nyc": {
