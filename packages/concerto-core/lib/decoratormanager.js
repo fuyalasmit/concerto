@@ -896,7 +896,7 @@ class DecoratorManager {
                     arguments: cmd.decorator.arguments.map(arg => {
                         const [typeKey, value] = Object.entries(arg)[0];
                         const className = this.mapTypeKeyToClass(typeKey);
-                        return { "$class": className, value };
+                        return { '$class': className, value };
                     })
                 };
 

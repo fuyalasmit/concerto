@@ -925,5 +925,56 @@ describe('DecoratorManager', () => {
             chai.expect(property.decorators).to.have.lengthOf(1);
             chai.expect(property.decorators[0].name).to.equal('Form');
         });
+
+        let manager;
+
+        beforeEach(() => {
+            manager = new DecoratorManager();
+        });
+
+        it('should convert JSON to YAML and back', () => {
+            const originalJson = {
+                '$class': 'org.accordproject.decoratorcommands.DecoratorCommandSet',
+                'name': 'pii',
+                'version': '1.0.0',
+                'commands': [
+                    {
+                        '$class': 'org.accordproject.decoratorcommands.Command',
+                        'type': 'UPSERT',
+                        'target': {
+                            '$class': 'org.accordproject.decoratorcommands.CommandTarget',
+                            'property': 'ssn'
+                        },
+                        'decorator': {
+                            '$class': 'concerto.metamodel@1.0.0.Decorator',
+                            'name': 'PII',
+                            'arguments': []
+                        }
+                    }
+                ]
+            };
+
+            const yaml = manager.jsonToYaml(originalJson);
+            const convertedJson = manager.yamlToJson(yaml);
+
+            // Manual deep comparison
+            const isEqual = JSON.stringify(convertedJson) === JSON.stringify(originalJson);
+            if (!isEqual) {
+                throw new Error(`Converted JSON does not match original. Got: ${JSON.stringify(convertedJson)}`);
+            }
+        });
+
+        it('should throw error for missing JSON fields', () => {
+            const invalidJson = { name: 'pii' }; // Missing version, commands
+            let error;
+            try {
+                manager.jsonToYaml(invalidJson);
+            } catch (e) {
+                error = e;
+            }
+            if (!error || error.message !== 'Required fields are missing in JSON') {
+                throw new Error('Expected error for missing fields not thrown');
+            }
+        });
     });
 });
